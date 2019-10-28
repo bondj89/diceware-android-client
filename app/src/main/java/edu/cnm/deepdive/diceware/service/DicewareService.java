@@ -37,17 +37,18 @@ public interface DicewareService {
   @PUT("passphrases/{id}")
   Single<Passphrase> put(@Header("Authorization") String token, @Path("id") long id, @Body Passphrase passphrase);
 
-  @POST("passphrase/")
+  @POST("passphrases/")
   Single<Passphrase> post(@Header("Authorization") String token, @Body Passphrase passphrase);
 
   static DicewareService getInstance() {
-  return InstanceHolder.INSTANCE;
+    return InstanceHolder.INSTANCE;
   }
 
   class InstanceHolder {
+
     private static final DicewareService INSTANCE;
     static {
-      // TODO Investigate login interceptor issues.
+      // TODO Investigate logging interceptor issues.
       Gson gson = new GsonBuilder()
           .excludeFieldsWithoutExposeAnnotation()
           .create();
