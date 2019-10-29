@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ProgressBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProviders;
@@ -34,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
             .setAction("Action", null).show();
       }
     });
+    ProgressBar waiting = findViewById(R.id.waiting);
     RecyclerView passphraseList = findViewById(R.id.keyword_list);
     MainViewModel viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
     GoogleSignInService.getInstance().getAccount().observe(this, (account) ->
@@ -50,11 +52,13 @@ public class MainActivity extends AppCompatActivity {
             menu.findItem(R.id.delete_passphrase).setOnMenuItemClickListener(
                 (item) -> {
                   Log.d("Delete selected", passphrase.getKey());
-                  // TODO Send request to server to delete passphrase; refresh view.
+                  waiting.setVisibility(View.VISIBLE);
+                  viewModel.deletePassphrase(passphrase);
                   return true;
                 });
           });
       passphraseList.setAdapter(adapter);
+      waiting.setVisibility(View.GONE);
     });
   }
 
