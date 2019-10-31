@@ -14,11 +14,13 @@ import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import edu.cnm.deepdive.diceware.R;
+import edu.cnm.deepdive.diceware.model.Passphrase;
 import edu.cnm.deepdive.diceware.service.GoogleSignInService;
 import edu.cnm.deepdive.diceware.view.PassphraseAdapter;
 import edu.cnm.deepdive.diceware.viewmodel.MainViewModel;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity
+    implements PassphraseFragment.OnCompleteListener {
 
   private ProgressBar waiting;
   private RecyclerView passphraseList;
@@ -64,10 +66,6 @@ public class MainActivity extends AppCompatActivity {
           (view, position, passphrase) -> {
             Log.d("Passphrase click", passphrase.getKey());
             PassphraseFragment fragment = PassphraseFragment.newInstance(passphrase);
-            fragment.setListener((p) -> {
-              waiting.setVisibility(View.VISIBLE);
-              viewModel.updatePassphrase(p);
-            });
             fragment.show(getSupportFragmentManager(), fragment.getClass().getSimpleName());
           },
           (menu, position, passphrase) -> {
@@ -107,10 +105,6 @@ public class MainActivity extends AppCompatActivity {
     FloatingActionButton fab = findViewById(R.id.fab);
     fab.setOnClickListener(view -> {
       PassphraseFragment fragment = PassphraseFragment.newInstance();
-      fragment.setListener((passphrase) -> {
-        waiting.setVisibility(View.VISIBLE);
-        viewModel.addPassphrase(passphrase);
-      });
       fragment.show(getSupportFragmentManager(), fragment.getClass().getSimpleName());
     });
     waiting = findViewById(R.id.waiting);
@@ -130,6 +124,16 @@ public class MainActivity extends AppCompatActivity {
     signInService.refresh()
         .addOnSuccessListener((account) -> runnable.run())
         .addOnFailureListener((e) -> signOut());
+  }
+
+  @Override
+  public void complete(Passphrase passphrase) {
+    waiting.setVisibility(View.VISIBLE);
+    if (passphrase.getId() == 0) {
+      viewModel.addPassphrase(passphrase);
+    } else {
+      viewModel.updatePassphrase(passphrase);
+    }
   }
 
 }

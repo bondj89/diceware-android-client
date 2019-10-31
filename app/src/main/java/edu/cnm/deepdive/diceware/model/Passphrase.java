@@ -4,15 +4,17 @@ import com.google.gson.annotations.Expose;
 import java.io.Serializable;
 import java.util.List;
 
-
 public class Passphrase implements Serializable {
 
-@Expose
+  private static final long serialVersionUID = -6693587121163744899L;
+
+  @Expose
   private long id;
 
-@Expose
+  @Expose
   private String key;
 
+  @Expose
   private List<String> words;
 
   public long getId() {
@@ -38,4 +40,5 @@ public class Passphrase implements Serializable {
   public void setWords(List<String> words) {
     this.words = words;
   }
+
 }
