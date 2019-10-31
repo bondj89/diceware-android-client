@@ -13,7 +13,6 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
 import edu.cnm.deepdive.diceware.R;
 import edu.cnm.deepdive.diceware.service.GoogleSignInService;
 import edu.cnm.deepdive.diceware.view.PassphraseAdapter;
@@ -31,62 +30,7 @@ public class MainActivity extends AppCompatActivity {
     super.onCreate(savedInstanceState);
     setupUI();
     setupViewModel();
-    setupSignin();
-  }
-
-  private void setupViewModel() {
-    viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
-    viewModel.getPassphrases().observe(this, (passphrases) -> {
-      PassphraseAdapter adapter = new PassphraseAdapter(this, passphrases,
-          (view, position, passphrase) -> {
-            // TODO Add code to pop up editor.
-            Log.d("Passphrase click", passphrase.getKey());
-          },
-          (menu, position, passphrase) -> {
-            Log.d("Passphrase context", passphrase.getKey());
-            getMenuInflater().inflate(R.menu.passphrase_context, menu);
-            menu.findItem(R.id.delete_passphrase).setOnMenuItemClickListener(
-                (item) -> {
-                  Log.d("Delete selected", passphrase.getKey());
-                  waiting.setVisibility(View.VISIBLE);
-                  refreshSignIn(() -> viewModel.deletePassphrase(passphrase));
-                  return true;
-                });
-          });
-      passphraseList.setAdapter(adapter);
-      waiting.setVisibility(View.GONE);
-    });
-    viewModel.getThrowable().observe(this, (throwable) -> {
-      if (throwable != null) {
-        waiting.setVisibility(View.GONE);
-        Toast.makeText(this,
-            String.format("Connection to server failed: %s", throwable.getMessage()),
-            Toast.LENGTH_LONG).show();
-      }
-    });
-  }
-
-  private void setupSignin() {
-    signInService = GoogleSignInService.getInstance();
-    signInService.getAccount().observe(this, (account) ->
-        viewModel.setAccount(account));
-  }
-
-  private void setupUI() {
-    setContentView(R.layout.activity_main);
-    Toolbar toolbar = findViewById(R.id.toolbar);
-    setSupportActionBar(toolbar);
-
-    FloatingActionButton fab = findViewById(R.id.fab);
-    fab.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View view) {
-        Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-            .setAction("Action", null).show();
-      }
-    });
-    waiting = findViewById(R.id.waiting);
-    passphraseList = findViewById(R.id.keyword_list);
+    setupSignIn();
   }
 
   @Override
@@ -113,6 +57,66 @@ public class MainActivity extends AppCompatActivity {
     return handled;
   }
 
+  private void setupViewModel() {
+    viewModel = ViewModelProviders.of(this).get(MainViewModel.class);
+    viewModel.getPassphrases().observe(this, (passphrases) -> {
+      PassphraseAdapter adapter = new PassphraseAdapter(this, passphrases,
+          (view, position, passphrase) -> {
+            Log.d("Passphrase click", passphrase.getKey());
+            PassphraseFragment fragment = PassphraseFragment.newInstance(passphrase);
+            fragment.setListener((p) -> {
+              waiting.setVisibility(View.VISIBLE);
+              viewModel.updatePassphrase(p);
+            });
+            fragment.show(getSupportFragmentManager(), fragment.getClass().getSimpleName());
+          },
+          (menu, position, passphrase) -> {
+            Log.d("Passphrase context", passphrase.getKey());
+            getMenuInflater().inflate(R.menu.passphrase_context, menu);
+            menu.findItem(R.id.delete_passphrase).setOnMenuItemClickListener(
+                (item) -> {
+                  Log.d("Delete selected", passphrase.getKey());
+                  waiting.setVisibility(View.VISIBLE);
+                  refreshSignIn(() -> viewModel.deletePassphrase(passphrase));
+                  return true;
+                });
+          });
+      passphraseList.setAdapter(adapter);
+      waiting.setVisibility(View.GONE);
+    });
+    viewModel.getThrowable().observe(this, (throwable) -> {
+      if (throwable != null) {
+        waiting.setVisibility(View.GONE);
+        Toast.makeText(this,
+            String.format("Connection to server failed: %s", throwable.getMessage()),
+            Toast.LENGTH_LONG).show();
+      }
+    });
+  }
+
+  private void setupSignIn() {
+    signInService = GoogleSignInService.getInstance();
+    signInService.getAccount().observe(this, (account) ->
+        viewModel.setAccount(account));
+  }
+
+  private void setupUI() {
+    setContentView(R.layout.activity_main);
+    Toolbar toolbar = findViewById(R.id.toolbar);
+    setSupportActionBar(toolbar);
+    FloatingActionButton fab = findViewById(R.id.fab);
+    fab.setOnClickListener(view -> {
+      PassphraseFragment fragment = PassphraseFragment.newInstance();
+      fragment.setListener((passphrase) -> {
+        waiting.setVisibility(View.VISIBLE);
+        viewModel.addPassphrase(passphrase);
+      });
+      fragment.show(getSupportFragmentManager(), fragment.getClass().getSimpleName());
+    });
+    waiting = findViewById(R.id.waiting);
+    passphraseList = findViewById(R.id.keyword_list);
+  }
+
   private void signOut() {
     signInService.signOut()
         .addOnCompleteListener((task) -> {
@@ -126,7 +130,6 @@ public class MainActivity extends AppCompatActivity {
     signInService.refresh()
         .addOnSuccessListener((account) -> runnable.run())
         .addOnFailureListener((e) -> signOut());
-
   }
 
 }
